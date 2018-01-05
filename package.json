@@ -1,5 +1,5 @@
 {
-  "name": "xcfunctions.js",
+  "name": "xcfunctions",
   "version": "0.0.1",
   "description": "XComponent.Functions JS client library",
   "main": "index.js",
