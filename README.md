@@ -38,6 +38,32 @@ A triggered method implementation function is a function with the following sign
 function name(event, publicMember, internalMember, context, sender);
 ```
 
+- `event` is the object that triggered the transition;
+- `publicMember` and `internalMember` are respectively the public and internal members of the state machine when the transition was triggered.
+- `context` represents the execution context of the state machine, with the following structure:
+
+```js
+{
+    PublishNotification: boolean,
+    StateMachineId: number
+    WorkerId: number
+    StateCode: number
+    StateMachineCode: number,
+    ComponentCode: number,
+    PrivateTopic: string,
+    MessageType: string,
+    ErrorMessage: string,
+    SessionData: string 
+}
+```
+
+- `sender` is the object used to trigger sender calls, use it as follows:
+
+```js
+sender.transitionName(sentEvent, useContext);
+```
+
+Where `transitionName` is the name of the transition to trigger, `sentEvent` represents the event to be sent to trigger the transition and `useContext` is a boolean indicating if the event should be forwarded only to the current state machine (`true`) or to all state machines of the same type (`false`). 
 
 ### startEventQueue()
 
