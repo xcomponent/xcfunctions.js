@@ -10,6 +10,14 @@ The present library abstracts away from the REST protocol and allows developers 
 
 ## Programming model
 
+This library implements an event queue that periodically polls the REST server looking for triggered methods to execute. 
+
+As a developer, you must register a set of triggered methods to execute and then start the event queue.
+
+## Limitations
+
+The current library is very limited.  It only supports REST servers bound to the default address (`127.0.0.1:9676`). The event queue polls the server on a non configurable frequency of 1 call per second.
+
 ## Install
 
 With [npm](https://npmjs.org) do:
@@ -18,9 +26,23 @@ With [npm](https://npmjs.org) do:
 
 ## Methods
 
-### startEventQueue
+### registerTriggeredMethods(componentName, stateMachineName, triggeredMethod)
 
-### registerTriggeredMethods
+Registered a set of triggered methods and associate them to the provided component/state machine pair.
+
+The triggered method object is a dictionary whose keys are the names of the triggered method and value is a triggered method implementation function.
+
+A triggered method implementation function is a function with the following signature:
+
+```js
+function name(event, publicMember, internalMember, context, sender);
+```
+
+
+### startEventQueue()
+
+Starts the event queue that polls the REST service for triggered methods to execute.
+
 
 ## Writting triggered methods
 
