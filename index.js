@@ -53,11 +53,11 @@ function postResult(responseObject, callback) {
     };
 
     const request = http.request(postOptions, function(response) {
-        response.on('data', (data) => callback(null, data));
+        response.on('data', (data) => callback && callback(null, data));
     });
   
     request.on('error', function(error) {
-        callback(error);
+        if (callback) callback(error);
     });
 
     request.write(JSON.stringify(responseObject));

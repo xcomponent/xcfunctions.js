@@ -7,6 +7,9 @@
     "type": "git",
     "url": "git+https://github.com/xcomponent/xcfunctions.js.git"
   },
+  "scripts": {
+    "test": "jest"
+  },
   "keywords": [
     "XComponent",
     "REST"
@@ -16,5 +19,9 @@
   "bugs": {
     "url": "https://github.com/xcomponent/xcfunctions.js/issues"
   },
-  "homepage": "https://github.com/xcomponent/xcfunctions.js#readme"
+  "homepage": "https://github.com/xcomponent/xcfunctions.js#readme",
+  "devDependencies": {
+    "jest": "^22.0.4",
+    "nock": "^9.1.5"
+  }
 }
