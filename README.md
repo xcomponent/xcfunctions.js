@@ -1,3 +1,7 @@
+[![](http://slack.xcomponent.com/badge.svg)](http://slack.xcomponent.com/)
+[![npm](https://img.shields.io/npm/v/xcfunctions.svg)](https://www.npmjs.com/package/xcfunctions)
+[![Build Status](https://travis-ci.org/xcomponent/xcfunctions.js.svg?branch=master)](https://travis-ci.org/xcomponent/xcfunctions.js)
+
 # xcfunctions.js
 
 XComponent REST triggered methods JavaScript client library
