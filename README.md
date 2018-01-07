@@ -16,7 +16,10 @@ As a developer, you must register a set of triggered methods to execute and then
 
 ## Limitations
 
-The current library is very limited.  It only supports REST servers bound to the default address (`127.0.0.1:9676`). The event queue polls the server on a non configurable frequency of 1 call per second.
+- Current library only supports REST servers bound to the default address (`127.0.0.1:9676`);
+- The event queue polls the server on a non configurable frequency of 1 call per second.
+- Keys on objects received/sent from/to the REST server are case sensitive and follow C# naming conventions.
+- Sender calls are **NOT** performed asynchronously. All calls are performed (in the order they were performed by the triggered method) once the function returns.
 
 ## Install
 
@@ -32,6 +35,35 @@ Registered a set of triggered methods and associate them to the provided compone
 
 The triggered method object is a dictionary whose keys are the names of the triggered method and value is a triggered method implementation function.
 
+Triggered methods named following this pattern (special cases will be listed on next sections):
+
+`ExecuteOn_ToStateName_From_FromStateName_Through_TransitionName`
+
+For a transition named `TransitioName`, from state `FromStateName` to `ToStateName`.
+
+For example:
+
+```js
+xcfunctions.registerTriggeredMethods('Component', 'StateMachine', {
+    ExecuteOn_EntryPoint: (event, publicMember, internalMember, context, sender) => {
+        ...
+    },
+
+    ExecuteOn_S0_From_S1_Through_T: (event, publicMember, internalMember, context, sender) => {
+        ...
+    },
+
+    ...
+});
+```
+
+
+### startEventQueue()
+
+Starts the event queue that polls the REST service for triggered methods to execute.
+
+## Writing triggered methods function
+
 A triggered method implementation function is a function with the following signature:
 
 ```js
@@ -39,7 +71,7 @@ function name(event, publicMember, internalMember, context, sender);
 ```
 
 - `event` is the object that triggered the transition;
-- `publicMember` and `internalMember` are respectively the public and internal members of the state machine when the transition was triggered.
+- `publicMember` and `internalMember` are respectively the public and internal members of the state machine when the transition was triggered. **NOTE: These objects may be modified by the function code, modifications will be transferred to state machine.**
 - `context` represents the execution context of the state machine, with the following structure:
 
 ```js
@@ -65,16 +97,22 @@ sender.transitionName(sentEvent, useContext);
 
 Where `transitionName` is the name of the transition to trigger, `sentEvent` represents the event to be sent to trigger the transition and `useContext` is a boolean indicating if the event should be forwarded only to the current state machine (`true`) or to all state machines of the same type (`false`). 
 
-### startEventQueue()
+### Special transitions
 
-Starts the event queue that polls the REST service for triggered methods to execute.
+- **Entry point triggered methods**: these transitions are executed once per component, when its entry point state machine is instantiated. The triggered method should be called `ExecuteOn_EntryPoint` and it's triggering event is an empty object, and should therefore be ignored.
 
+- **Public member initializers**: these transitions are executed when a forked state machine is created. The triggered method should be called `InitializePublicMember`. This method should initialize the child state machine's public and internal members from its parent's. The received event has the following structure:
 
-## Writting triggered methods
-
-### Entry point triggered methods
-
-### Public member initializers
+```js
+{
+    ParentPublicMember: {
+        ...
+    },
+    ParentInternalMember: {
+        ...
+    } 
+}
+```
 
 ## License
 
