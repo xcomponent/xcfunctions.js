@@ -53,7 +53,11 @@ function postObject(object, endpoint, callback) {
     };
 
     const request = http.request(postOptions, function(response) {
-        response.on('data', (data) => callback && callback(null, data));
+        if (response.statusCode != 204) {
+            if (callback) callback(response.statusCode);
+        } else {
+            if (callback) callback(null, response.statusCode);
+        }
     });
   
     request.on('error', function(error) {
@@ -62,8 +66,6 @@ function postObject(object, endpoint, callback) {
 
     request.write(JSON.stringify(object));
     request.end();
-
-    console.log('Posted object: ', object);
 }
 
 function postConfiguration(configurationObject, callback) {
@@ -102,18 +104,27 @@ exports.startEventQueue = (configuration) => {
     };
 
     if (configuration) {
-        postConfiguration(configuration, (error) => {
+        const postConfigurationAction = () => postConfiguration(configuration, configurationCallback);
+        const retryIntervalSeconds = 5;
+        let configurationTimerID = null;
+        const configurationCallback = (error) => {
             if (error) {
                 console.error('Error updating configuration: ', error);
+                console.error('Retrying in ', retryIntervalSeconds, 's...');
+                configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds*1000);
+                return;
             }
 
+            clearTimeout(configurationTimerID);
             console.log('Configuraton successfuly updated!');
             installEventQueue();
-        });
+        };
+
+        postConfigurationAction();
+        configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds*1000);
     } else {
         installEventQueue();
     }
-
 };
 
 function senderHandler(target, name) {
@@ -142,7 +153,6 @@ function eventQueue() {
 
                     if (!(task.FunctionName in triggeredMethods[componentName][stateMachineName])) {
                         console.error('Received task for unregistered function', task.FunctionName);
-                        clearTimeout(eventQueue);
                         return;
                     }
 
@@ -154,7 +164,6 @@ function eventQueue() {
                         triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender);
                     } catch(e) {
                         console.error("Caught exception", e);
-                        error = e;
                     }
                     
                     if (!error) {

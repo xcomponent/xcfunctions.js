@@ -148,3 +148,4 @@ test('configuration update on event queue start', done => {
         TimeoutInMillis: 1000
     });
 });
+
