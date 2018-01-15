@@ -1,6 +1,6 @@
 {
   "name": "xcfunctions",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "XComponent.Functions JS client library",
   "main": "index.js",
   "repository": {
