@@ -62,6 +62,8 @@ function postResult(responseObject, callback) {
 
     request.write(JSON.stringify(responseObject));
     request.end();
+
+    console.log('Posted response: ', responseObject);
 }
 
 const triggeredMethods = { };
@@ -74,9 +76,7 @@ exports.registerTriggeredMethod = (componentName, stateMachineName, triggeredMet
         triggeredMethods[componentName][stateMachineName] = { };
     }
 
-    if (!(triggeredMethodName in triggeredMethods[componentName][stateMachineName])) {
-        triggeredMethods[componentName][stateMachineName][triggeredMethodName] = triggeredMethodFunction;
-    }
+    triggeredMethods[componentName][stateMachineName][triggeredMethodName] = triggeredMethodFunction;
 };
 
 exports.registerTriggeredMethods = (componentName, stateMachineName, triggeredMethods) => {
@@ -90,13 +90,6 @@ exports.startEventQueue= () => {
     setInterval(eventQueue, 1000);
     console.log('Waiting for tasks...');
 };
-
-function processTaskResponse(error, result) {
-    if (error) {
-        console.error(error);
-        return;
-    }
-}
 
 function senderHandler(target, name) {
     return (parameter, useContext) => {
@@ -132,10 +125,15 @@ function eventQueue() {
                     const sendersList = [];
                     const sender = new Proxy({ Senders: sendersList }, { get: senderHandler });
 
-                    triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender);
+                    try {
+                        triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender);
+                    } catch(e) {
+                        console.error("Caught exception", e);
+                        error = e;
+                    }
                     
                     if (!error) {
-                        const augmentedResponse = {
+                        postResult({
 // jshint ignore:start
                             Senders: sendersList,
                             PublicMember: task.PublicMember,
@@ -144,10 +142,14 @@ function eventQueue() {
                             StateMachineName: task.StateMachineName,
                             RequestId: task.RequestId
 // jshint ignore:end
-                        }
-
-                        console.log('Posted response: ', augmentedResponse);
-                        postResult(augmentedResponse);
+                        });
+                    } else {
+                        postResult({
+// jshint ignore:start
+                            IsError: true,
+                            ErrorMessage: "" + error
+// jshint ignore:end
+                        });
                     }
                 });
         }
