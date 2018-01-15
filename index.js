@@ -164,6 +164,7 @@ function eventQueue() {
                         triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender);
                     } catch(e) {
                         console.error("Caught exception", e);
+                        error = e;
                     }
                     
                     if (!error) {
