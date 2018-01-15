@@ -110,7 +110,6 @@ test('error handling', done => {
     nock('http://127.0.0.1:9676')
         .post('/api/Functions')
         .reply(204, (uri, body) => {
-            console.log('received response', body);
             expect(body.IsError).toBeTruthy();
             expect(body.ErrorMessage).toBeDefined();
 
@@ -130,4 +129,22 @@ test('error handling', done => {
     xcfunctions.startEventQueue();
 
     jest.runOnlyPendingTimers();
+});
+
+test('configuration update on event queue start', done => {
+    nock('http://127.0.0.1:9676')
+        .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
+        .reply(204); 
+
+    nock('http://127.0.0.1:9676')
+        .post('/api/Configuration')
+        .reply(204, (uri, body) => {
+            expect(body.TimeoutInMillis).toBe(1000);
+            done();
+            return {};
+        });
+
+    xcfunctions.startEventQueue({
+        TimeoutInMillis: 1000
+    });
 });

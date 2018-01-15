@@ -41,11 +41,11 @@ function getTask(componentName, stateMachineName, callback) {
         .end();
 }
 
-function postResult(responseObject, callback) {
+function postObject(object, endpoint, callback) {
     const postOptions = {
         host: '127.0.0.1',
         port: 9676,
-        path: '/api/Functions',
+        path: '/api/' + endpoint,
         method: 'POST',
         headers : {
             'Content-Type' : 'application/json',
@@ -60,10 +60,18 @@ function postResult(responseObject, callback) {
         if (callback) callback(error);
     });
 
-    request.write(JSON.stringify(responseObject));
+    request.write(JSON.stringify(object));
     request.end();
 
-    console.log('Posted response: ', responseObject);
+    console.log('Posted object: ', object);
+}
+
+function postConfiguration(configurationObject, callback) {
+    postObject(configurationObject, 'Configuration', callback);
+}
+
+function postResult(responseObject, callback) {
+    postObject(responseObject, 'Functions', callback);
 }
 
 const triggeredMethods = { };
@@ -85,10 +93,27 @@ exports.registerTriggeredMethods = (componentName, stateMachineName, triggeredMe
     }
 }
 
-exports.startEventQueue= () => {
+exports.startEventQueue = (configuration) => {
     console.log('Registered triggered methods: ', triggeredMethods);
-    setInterval(eventQueue, 1000);
-    console.log('Waiting for tasks...');
+
+    const installEventQueue = () => {
+        setInterval(eventQueue, 1000);
+        console.log('Waiting for tasks...');
+    };
+
+    if (configuration) {
+        postConfiguration(configuration, (error) => {
+            if (error) {
+                console.error('Error updating configuration: ', error);
+            }
+
+            console.log('Configuraton successfuly updated!');
+            installEventQueue();
+        });
+    } else {
+        installEventQueue();
+    }
+
 };
 
 function senderHandler(target, name) {
