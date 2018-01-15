@@ -41,11 +41,11 @@ function getTask(componentName, stateMachineName, callback) {
         .end();
 }
 
-function postResult(responseObject, callback) {
+function postObject(object, endpoint, callback) {
     const postOptions = {
         host: '127.0.0.1',
         port: 9676,
-        path: '/api/Functions',
+        path: '/api/' + endpoint,
         method: 'POST',
         headers : {
             'Content-Type' : 'application/json',
@@ -53,15 +53,27 @@ function postResult(responseObject, callback) {
     };
 
     const request = http.request(postOptions, function(response) {
-        response.on('data', (data) => callback && callback(null, data));
+        if (response.statusCode != 204) {
+            if (callback) callback(response.statusCode);
+        } else {
+            if (callback) callback(null, response.statusCode);
+        }
     });
   
     request.on('error', function(error) {
         if (callback) callback(error);
     });
 
-    request.write(JSON.stringify(responseObject));
+    request.write(JSON.stringify(object));
     request.end();
+}
+
+function postConfiguration(configurationObject, callback) {
+    postObject(configurationObject, 'Configuration', callback);
+}
+
+function postResult(responseObject, callback) {
+    postObject(responseObject, 'Functions', callback);
 }
 
 const triggeredMethods = { };
@@ -74,9 +86,7 @@ exports.registerTriggeredMethod = (componentName, stateMachineName, triggeredMet
         triggeredMethods[componentName][stateMachineName] = { };
     }
 
-    if (!(triggeredMethodName in triggeredMethods[componentName][stateMachineName])) {
-        triggeredMethods[componentName][stateMachineName][triggeredMethodName] = triggeredMethodFunction;
-    }
+    triggeredMethods[componentName][stateMachineName][triggeredMethodName] = triggeredMethodFunction;
 };
 
 exports.registerTriggeredMethods = (componentName, stateMachineName, triggeredMethods) => {
@@ -85,18 +95,37 @@ exports.registerTriggeredMethods = (componentName, stateMachineName, triggeredMe
     }
 }
 
-exports.startEventQueue= () => {
+exports.startEventQueue = (configuration) => {
     console.log('Registered triggered methods: ', triggeredMethods);
-    setInterval(eventQueue, 1000);
-    console.log('Waiting for tasks...');
-};
 
-function processTaskResponse(error, result) {
-    if (error) {
-        console.error(error);
-        return;
+    const installEventQueue = () => {
+        setInterval(eventQueue, 1000);
+        console.log('Waiting for tasks...');
+    };
+
+    if (configuration) {
+        const postConfigurationAction = () => postConfiguration(configuration, configurationCallback);
+        const retryIntervalSeconds = 5;
+        let configurationTimerID = null;
+        const configurationCallback = (error) => {
+            if (error) {
+                console.error('Error updating configuration: ', error);
+                console.error('Retrying in ', retryIntervalSeconds, 's...');
+                configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds*1000);
+                return;
+            }
+
+            clearTimeout(configurationTimerID);
+            console.log('Configuraton successfuly updated!');
+            installEventQueue();
+        };
+
+        postConfigurationAction();
+        configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds*1000);
+    } else {
+        installEventQueue();
     }
-}
+};
 
 function senderHandler(target, name) {
     return (parameter, useContext) => {
@@ -124,7 +153,6 @@ function eventQueue() {
 
                     if (!(task.FunctionName in triggeredMethods[componentName][stateMachineName])) {
                         console.error('Received task for unregistered function', task.FunctionName);
-                        clearTimeout(eventQueue);
                         return;
                     }
 
@@ -132,10 +160,15 @@ function eventQueue() {
                     const sendersList = [];
                     const sender = new Proxy({ Senders: sendersList }, { get: senderHandler });
 
-                    triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender);
+                    try {
+                        triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender);
+                    } catch(e) {
+                        console.error("Caught exception", e);
+                        error = e;
+                    }
                     
                     if (!error) {
-                        const augmentedResponse = {
+                        postResult({
 // jshint ignore:start
                             Senders: sendersList,
                             PublicMember: task.PublicMember,
@@ -144,10 +177,14 @@ function eventQueue() {
                             StateMachineName: task.StateMachineName,
                             RequestId: task.RequestId
 // jshint ignore:end
-                        }
-
-                        console.log('Posted response: ', augmentedResponse);
-                        postResult(augmentedResponse);
+                        });
+                    } else {
+                        postResult({
+// jshint ignore:start
+                            IsError: true,
+                            ErrorMessage: "" + error
+// jshint ignore:end
+                        });
                     }
                 });
         }

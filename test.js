@@ -7,6 +7,7 @@ jest.useFakeTimers();
 
 afterEach(() => {
     nock.cleanAll();
+    jest.clearAllTimers();
 });
 
 test('triggered method call', done => {
@@ -44,6 +45,8 @@ test('triggered method call', done => {
             expect(body.StateMachineName).toBe('StateMachine');
             expect(body.RequestId).toBe('requestId');
             expect(body.Senders.length).toBe(0);
+            expect(body.IsError).toBeFalsy();
+            expect(body.ErrorMessage).toBeFalsy();
 
             done();
             return {};
@@ -77,3 +80,72 @@ test('triggered method call', done => {
 
     jest.runOnlyPendingTimers();
 });
+
+test('error handling', done => {
+    nock('http://127.0.0.1:9676')
+        .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
+        .reply(200, 
+            { 
+                Event: { Code: 0 },
+                PublicMember: { Code: 1 },
+                InternalMember: { Code: 2 },
+                Context: { 
+                    PublishNotification: true,
+                    StateMachineId: 2,
+                    WorkerId: 3,
+                    StateCode: 1,
+                    StateMachineCode: 93084851,
+                    ComponentCode: 93084851,
+                    PrivateTopic: 'private',
+                    MessageType: 'event.type.name.Name',
+                    ErrorMessage: 'error',
+                    SessionData: 'data' 
+                },
+                ComponentName: 'Component',
+                StateMachineName: 'StateMachine',
+                FunctionName: 'TriggeredMethod',
+                RequestId: 'requestId' 
+            });
+
+    nock('http://127.0.0.1:9676')
+        .post('/api/Functions')
+        .reply(204, (uri, body) => {
+            expect(body.IsError).toBeTruthy();
+            expect(body.ErrorMessage).toBeDefined();
+
+            done();
+            return {};
+        });
+
+    xcfunctions.registerTriggeredMethods(
+        'Component',
+        'StateMachine',
+        {
+            'TriggeredMethod': (event, publicMember, internalMember, context, sender) => {
+                throw "error";
+            }
+        });
+
+    xcfunctions.startEventQueue();
+
+    jest.runOnlyPendingTimers();
+});
+
+test('configuration update on event queue start', done => {
+    nock('http://127.0.0.1:9676')
+        .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
+        .reply(204); 
+
+    nock('http://127.0.0.1:9676')
+        .post('/api/Configuration')
+        .reply(204, (uri, body) => {
+            expect(body.TimeoutInMillis).toBe(1000);
+            done();
+            return {};
+        });
+
+    xcfunctions.startEventQueue({
+        TimeoutInMillis: 1000
+    });
+});
+
