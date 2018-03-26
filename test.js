@@ -149,3 +149,33 @@ test('configuration update on event queue start', done => {
     });
 });
 
+
+test('configuration update on event queue start with a modified configuration', done => {
+    const port = 9999;
+    const host = 'localhost';
+    xcfunctions.setConfig({
+        port: port,
+        host: host
+    });
+
+    expect(xcfunctions.getConfig().port).toBe(port);
+    expect(xcfunctions.getConfig().host).toBe(host);
+
+    const url = 'http://' + host + ':' + port;
+
+    nock(url)
+        .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
+        .reply(204);
+
+    nock(url)
+        .post('/api/Configuration')
+        .reply(204, (uri, body) => {
+            expect(body.TimeoutInMillis).toBe(1000);
+            done();
+            return {};
+        });
+
+    xcfunctions.startEventQueue({
+        TimeoutInMillis: 1000
+    });
+});

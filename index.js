@@ -4,37 +4,53 @@ const http = require('http');
 
 const nullBodyError = 'Body is null';
 
+const defaultConfig = {
+    host: '127.0.0.1',
+    port: 9676
+};
+
+exports.setConfig = (config) => {
+    if (!config) {
+        return;
+    }
+    defaultConfig.host = (config.host) ? config.host : defaultConfig.host;
+    defaultConfig.port = (config.port) ? config.port : defaultConfig.port;
+};
+
+const getConfig = () => {
+    return defaultConfig;
+};
+
+exports.getConfig = getConfig;
+
 function getTask(componentName, stateMachineName, callback) {
-    const getOptions = (componentName, stateMachineName) => { 
+    const getOptions = (componentName, stateMachineName) => {
         return {
-            host: '127.0.0.1',
-            port: 9676,
-            path: '/api/Functions?componentName='+escape(componentName)+'&stateMachineName='+escape(stateMachineName),
+            host: getConfig().host,
+            port: getConfig().port,
+            path: '/api/Functions?componentName=' + escape(componentName) + '&stateMachineName=' + escape(stateMachineName),
             method: 'GET'
         };
     };
 
     http
-        .request(getOptions(componentName, stateMachineName), function(response)
-        {
+        .request(getOptions(componentName, stateMachineName), function (response) {
             let body = '';
-            response.on('data',(data) => {
+            response.on('data', (data) => {
                 body += data;
             });
-            response.on('end',() => 
-                {
-                    if(body === 'null')
-                    {
-                        callback(nullBodyError, null);
-                        return;
-                    }
+            response.on('end', () => {
+                if (body === 'null') {
+                    callback(nullBodyError, null);
+                    return;
+                }
 
-                    try {
-                        callback(null, JSON.parse(body));
-                    } catch(e) {
-                        callback(e, null);
-                    }
-                });
+                try {
+                    callback(null, JSON.parse(body));
+                } catch (e) {
+                    callback(e, null);
+                }
+            });
             response.on('error', callback);
         })
         .on('error', callback)
@@ -43,24 +59,24 @@ function getTask(componentName, stateMachineName, callback) {
 
 function postObject(object, endpoint, callback) {
     const postOptions = {
-        host: '127.0.0.1',
-        port: 9676,
+        host: getConfig().host,
+        port: getConfig().port,
         path: '/api/' + endpoint,
         method: 'POST',
-        headers : {
-            'Content-Type' : 'application/json',
+        headers: {
+            'Content-Type': 'application/json',
         }
     };
 
-    const request = http.request(postOptions, function(response) {
+    const request = http.request(postOptions, function (response) {
         if (response.statusCode != 204) {
             if (callback) callback(response.statusCode);
         } else {
             if (callback) callback(null, response.statusCode);
         }
     });
-  
-    request.on('error', function(error) {
+
+    request.on('error', function (error) {
         if (callback) callback(error);
     });
 
@@ -76,14 +92,14 @@ function postResult(responseObject, callback) {
     postObject(responseObject, 'Functions', callback);
 }
 
-const triggeredMethods = { };
+const triggeredMethods = {};
 
 exports.registerTriggeredMethod = (componentName, stateMachineName, triggeredMethodName, triggeredMethodFunction) => {
     if (!(componentName in triggeredMethods)) {
-        triggeredMethods[componentName] = { };
+        triggeredMethods[componentName] = {};
     }
     if (!(stateMachineName in triggeredMethods[componentName])) {
-        triggeredMethods[componentName][stateMachineName] = { };
+        triggeredMethods[componentName][stateMachineName] = {};
     }
 
     triggeredMethods[componentName][stateMachineName][triggeredMethodName] = triggeredMethodFunction;
@@ -111,7 +127,7 @@ exports.startEventQueue = (configuration) => {
             if (error) {
                 console.error('Error updating configuration: ', error);
                 console.error('Retrying in ', retryIntervalSeconds, 's...');
-                configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds*1000);
+                configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds * 1000);
                 return;
             }
 
@@ -121,7 +137,7 @@ exports.startEventQueue = (configuration) => {
         };
 
         postConfigurationAction();
-        configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds*1000);
+        configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds * 1000);
     } else {
         installEventQueue();
     }
@@ -138,55 +154,54 @@ function senderHandler(target, name) {
 }
 
 function eventQueue() {
-    for(const componentName in triggeredMethods) {
-        for(const stateMachineName in triggeredMethods[componentName]) {
-            getTask(componentName, stateMachineName, (error, task) => 
-                {
-                    if (error) {
-                        if (error !== nullBodyError && !(error.code && error.code === 'ECONNREFUSED') ) {
-                            console.error(error);
-                        }
-                        return;
+    for (const componentName in triggeredMethods) {
+        for (const stateMachineName in triggeredMethods[componentName]) {
+            getTask(componentName, stateMachineName, (error, task) => {
+                if (error) {
+                    if (error !== nullBodyError && !(error.code && error.code === 'ECONNREFUSED')) {
+                        console.error(error);
                     }
+                    return;
+                }
 
-                    console.log('Received task: ', task);
+                console.log('Received task: ', task);
 
-                    if (!(task.FunctionName in triggeredMethods[componentName][stateMachineName])) {
-                        console.error('Received task for unregistered function', task.FunctionName);
-                        return;
-                    }
+                if (!(task.FunctionName in triggeredMethods[componentName][stateMachineName])) {
+                    console.error('Received task for unregistered function', task.FunctionName);
+                    return;
+                }
 
-                    const triggeredMethod = triggeredMethods[componentName][stateMachineName][task.FunctionName];
-                    const sendersList = [];
-                    const sender = new Proxy({ Senders: sendersList }, { get: senderHandler });
+                const triggeredMethod = triggeredMethods[componentName][stateMachineName][task.FunctionName];
+                const sendersList = [];
+                const sender = new Proxy({ Senders: sendersList }, { get: senderHandler });
 
-                    try {
-                        triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender);
-                    } catch(e) {
-                        console.error("Caught exception", e);
-                        error = e;
-                    }
-                    
-                    if (!error) {
-                        postResult({
-// jshint ignore:start
-                            Senders: sendersList,
-                            PublicMember: task.PublicMember,
-                            InternalMember: task.InternalMember,
-                            ComponentName: task.ComponentName,
-                            StateMachineName: task.StateMachineName,
-                            RequestId: task.RequestId
-// jshint ignore:end
-                        });
-                    } else {
-                        postResult({
-// jshint ignore:start
-                            IsError: true,
-                            ErrorMessage: "" + error
-// jshint ignore:end
-                        });
-                    }
-                });
+                try {
+                    triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender);
+                } catch (e) {
+                    console.error("Caught exception", e);
+                    error = e;
+                }
+
+                if (!error) {
+                    postResult({
+                        // jshint ignore:start
+                        Senders: sendersList,
+                        PublicMember: task.PublicMember,
+                        InternalMember: task.InternalMember,
+                        ComponentName: task.ComponentName,
+                        StateMachineName: task.StateMachineName,
+                        RequestId: task.RequestId
+                        // jshint ignore:end
+                    });
+                } else {
+                    postResult({
+                        // jshint ignore:start
+                        IsError: true,
+                        ErrorMessage: "" + error
+                        // jshint ignore:end
+                    });
+                }
+            });
         }
     }
 }
