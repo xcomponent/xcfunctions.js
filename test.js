@@ -150,7 +150,7 @@ test('configuration update on event queue start', done => {
 });
 
 
-test('', done => {
+test('configuration update on event queue start with a modified configuration', done => {
     const port = 9999;
     const host = 'localhost';
     xcfunctions.setConfig({

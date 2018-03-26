@@ -119,6 +119,16 @@ Where `transitionName` is the name of the transition to trigger, `sentEvent` rep
 }
 ```
 
+### Configuration
+
+Library uses by default localhost on port 9676.
+```js
+xcfunctions.setConfig({
+    port: ...,
+    host: ...
+});
+```
+
 ## Contributing
 
 1. Fork it!
