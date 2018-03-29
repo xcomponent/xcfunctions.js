@@ -149,6 +149,15 @@ test('configuration update on event queue start', done => {
     });
 });
 
+test('configuration update on event queue start', done => {
+    nock('http://127.0.0.1:9676')
+        .get('/api/StringResources')
+        .reply(204); 
+
+    xcfunctions.startEventQueue({
+        TimeoutInMillis: 1000
+    });
+});
 
 test('configuration update on event queue start with a modified configuration', done => {
     const port = 9999;
@@ -179,3 +188,5 @@ test('configuration update on event queue start with a modified configuration', 
         TimeoutInMillis: 1000
     });
 });
+
+
