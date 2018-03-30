@@ -18,10 +18,9 @@ As a developer, you must register a set of triggered methods implementation func
 
 ## Limitations
 
-- The current library only supports REST servers bound to the default address (`127.0.0.1:9676`);
 - The event queue polls the server on a non configurable frequency of 1 call per second;
 - Keys on objects received/sent from/to the REST server are case sensitive and follow C# naming conventions;
-- Sender calls are **NOT** performed asynchronously. All calls are performed, in the order they were performed by the triggered method, once the function returns.
+- Sender calls are **NOT** performed asynchronously. All calls are performed in the order they were performed by the triggered method, i.e. once the function returns.
 
 ## Install
 
@@ -30,6 +29,32 @@ With [npm](https://npmjs.org) do:
 `npm install xcfunctions`
 
 ## Methods
+
+### setConfig(configuration)
+
+Updates library configuration, which is an object containing the following keys:
+
+- `host`: the host where the server is running;
+- `port`: the port where the server is running;
+
+The following code snippet illustrates a call to the `setConfig(...)` method:
+
+```js
+xcfunctions.setConfig({
+    port: 8000,
+    host: 'localhost'
+});
+```
+
+### getConfig()
+
+Returns current library configuration.
+
+The following code snippet illustrates a call to the `getConfig()` method:
+
+```js
+xcfunctions.getConfig().port    // returns the port on which the server is running
+```
 
 ### registerTriggeredMethods(componentName, stateMachineName, triggeredMethod)
 
@@ -117,16 +142,6 @@ Where `transitionName` is the name of the transition to trigger, `sentEvent` rep
         ...
     } 
 }
-```
-
-### Configuration
-
-Library uses by default localhost on port 9676.
-```js
-xcfunctions.setConfig({
-    port: ...,
-    host: ...
-});
 ```
 
 ## Contributing
