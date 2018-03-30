@@ -2,6 +2,7 @@
 
 const http = require('http');
 
+
 const nullBodyError = 'Body is null';
 
 const defaultConfig = {
@@ -22,6 +23,28 @@ const getConfig = () => {
 };
 
 exports.getConfig = getConfig;
+
+function getStringResources(callback) {
+    const options = {
+        host: getConfig().host,
+        port: getConfig().port,
+        path: '/api/StringResources',
+        method: 'GET'
+    };
+    http.request(options, function (response) {
+        response.on('data', (data) => {
+            const jsonData = JSON.parse(data.toString('utf8'));
+            if (!jsonData.Message) {
+                callback(null, jsonData);
+            } else {
+                callback(new Error("Error on " + options.host + ":" + options.port), jsonData);
+            }
+        });
+    })
+    .on('error', callback)
+    .end();
+};
+exports.getStringResources = getStringResources;
 
 function getTask(componentName, stateMachineName, callback) {
     const getOptions = (componentName, stateMachineName) => {

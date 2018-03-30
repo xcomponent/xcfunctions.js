@@ -13,12 +13,12 @@ afterEach(() => {
 test('triggered method call', done => {
     nock('http://127.0.0.1:9676')
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
-        .reply(200, 
-            { 
+        .reply(200,
+            {
                 Event: { Code: 0 },
                 PublicMember: { Code: 1 },
                 InternalMember: { Code: 2 },
-                Context: { 
+                Context: {
                     PublishNotification: true,
                     StateMachineId: 2,
                     WorkerId: 3,
@@ -28,12 +28,12 @@ test('triggered method call', done => {
                     PrivateTopic: 'private',
                     MessageType: 'event.type.name.Name',
                     ErrorMessage: 'error',
-                    SessionData: 'data' 
+                    SessionData: 'data'
                 },
                 ComponentName: 'Component',
                 StateMachineName: 'StateMachine',
                 FunctionName: 'TriggeredMethod',
-                RequestId: 'requestId' 
+                RequestId: 'requestId'
             });
 
     nock('http://127.0.0.1:9676')
@@ -71,8 +71,8 @@ test('triggered method call', done => {
                 expect(context.ErrorMessage).toBe('error');
                 expect(context.SessionData).toBe('data');
 
-                publicMember.Code ++;
-                internalMember.Code ++;
+                publicMember.Code++;
+                internalMember.Code++;
             }
         });
 
@@ -84,12 +84,12 @@ test('triggered method call', done => {
 test('error handling', done => {
     nock('http://127.0.0.1:9676')
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
-        .reply(200, 
-            { 
+        .reply(200,
+            {
                 Event: { Code: 0 },
                 PublicMember: { Code: 1 },
                 InternalMember: { Code: 2 },
-                Context: { 
+                Context: {
                     PublishNotification: true,
                     StateMachineId: 2,
                     WorkerId: 3,
@@ -99,12 +99,12 @@ test('error handling', done => {
                     PrivateTopic: 'private',
                     MessageType: 'event.type.name.Name',
                     ErrorMessage: 'error',
-                    SessionData: 'data' 
+                    SessionData: 'data'
                 },
                 ComponentName: 'Component',
                 StateMachineName: 'StateMachine',
                 FunctionName: 'TriggeredMethod',
-                RequestId: 'requestId' 
+                RequestId: 'requestId'
             });
 
     nock('http://127.0.0.1:9676')
@@ -134,7 +134,7 @@ test('error handling', done => {
 test('configuration update on event queue start', done => {
     nock('http://127.0.0.1:9676')
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
-        .reply(204); 
+        .reply(204);
 
     nock('http://127.0.0.1:9676')
         .post('/api/Configuration')
@@ -149,6 +149,25 @@ test('configuration update on event queue start', done => {
     });
 });
 
+test('Test get string resources', done => {
+    const expectedJsonData = [{ ComponentName: 'HW', Key: 'PORT', Value: '8080' }];
+    nock('http://127.0.0.1:9676')
+        .get('/api/StringResources')
+        .reply(204, expectedJsonData);
+
+    xcfunctions.getStringResources((err, jsonData) => {
+        if (err) {
+            console.log(err);
+            return;
+        }
+        expect(expectedJsonData).toEqual(jsonData);
+        done();
+    });
+    
+    xcfunctions.startEventQueue({
+        TimeoutInMillis: 1000
+    });
+});
 
 test('configuration update on event queue start with a modified configuration', done => {
     const port = 9999;
@@ -179,3 +198,5 @@ test('configuration update on event queue start with a modified configuration', 
         TimeoutInMillis: 1000
     });
 });
+
+
