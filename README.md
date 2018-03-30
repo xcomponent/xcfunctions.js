@@ -56,6 +56,19 @@ The following code snippet illustrates a call to the `getConfig()` method:
 xcfunctions.getConfig().port    // returns the port on which the server is running
 ```
 
+### getStringResources(callback)
+
+Returns the string resources defined in xcomponent studio
+
+```js
+xcfunctions.getStringResources((err, data) => {
+    if (err) {
+        return;
+    }
+    // data = [{ ComponentName: ..., Key: ..., Value: ... }, ...]
+})
+```
+
 ### registerTriggeredMethods(componentName, stateMachineName, triggeredMethod)
 
 Registers a set of triggered method implementation functions and associate them to triggered methods in the provided component/state machine pair.
