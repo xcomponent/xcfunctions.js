@@ -10,7 +10,25 @@ afterEach(() => {
     jest.clearAllTimers();
 });
 
+/*test('getAllStringResources', done => {
+    nock('http://127.0.0.1:9676')
+    .get('/api/StringResources')
+    .reply(200, [{ ComponentName: 'HW', Key: 'PORT', Value: '7890' }]);
+
+    xcfunctions.getAllStringResources((err, data) => {
+        if (err) {
+            console.log(err);
+            return;
+        }
+        done();
+    });
+});*/
+
 test('triggered method call', done => {
+    nock('http://127.0.0.1:9676')
+    .get('/api/StringResources')
+    .reply(200, []);
+
     nock('http://127.0.0.1:9676')
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
         .reply(200,
@@ -51,7 +69,7 @@ test('triggered method call', done => {
             done();
             return {};
         });
-
+    
     xcfunctions.registerTriggeredMethods(
         'Component',
         'StateMachine',
@@ -81,7 +99,7 @@ test('triggered method call', done => {
     jest.runOnlyPendingTimers();
 });
 
-test('error handling', done => {
+/*test('error handling', done => {
     nock('http://127.0.0.1:9676')
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
         .reply(200,
@@ -150,20 +168,14 @@ test('configuration update on event queue start', done => {
 });
 
 test('Test get string resources', done => {
-    const expectedJsonData = [{ ComponentName: 'HW', Key: 'PORT', Value: '8080' }];
+    const expectedJsonData = [{ ComponentName: 'HW', Key: 'PORT', Value: '7890' }];
     nock('http://127.0.0.1:9676')
         .get('/api/StringResources')
         .reply(204, expectedJsonData);
 
-    xcfunctions.getStringResources((err, jsonData) => {
-        if (err) {
-            console.log(err);
-            return;
-        }
-        expect(expectedJsonData).toEqual(jsonData);
-        done();
-    });
-    
+    expect(xcfunctions.getStringResource('HW', 'PORT')).toEqual('7890');
+    done();
+
     xcfunctions.startEventQueue({
         TimeoutInMillis: 1000
     });
@@ -172,14 +184,6 @@ test('Test get string resources', done => {
 test('configuration update on event queue start with a modified configuration', done => {
     const port = 9999;
     const host = 'localhost';
-    xcfunctions.setConfig({
-        port: port,
-        host: host
-    });
-
-    expect(xcfunctions.getConfig().port).toBe(port);
-    expect(xcfunctions.getConfig().host).toBe(host);
-
     const url = 'http://' + host + ':' + port;
 
     nock(url)
@@ -195,8 +199,10 @@ test('configuration update on event queue start with a modified configuration', 
         });
 
     xcfunctions.startEventQueue({
-        TimeoutInMillis: 1000
+        TimeoutInMillis: 1000,
+        port: port,
+        host: host
     });
-});
+});*/
 
 
