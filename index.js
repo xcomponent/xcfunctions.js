@@ -17,17 +17,12 @@ function setConfig(config) {
     defaultConfig.port = (config.port) ? config.port : defaultConfig.port;
 };
 
-function getConfig() {
-    return defaultConfig;
-};
-
-
-var stringResources = null;
+var localStringResources = null;
 
 function getStringResources(callback) {
     const options = {
-        host: getConfig().host,
-        port: getConfig().port,
+        host: defaultConfig.host,
+        port: defaultConfig.port,
         path: '/api/StringResources',
         method: 'GET'
     };
@@ -46,12 +41,12 @@ function getStringResources(callback) {
 };
 
 function getStringResourceValue(component, key) {
-    if (!stringResources) {
-        return null;
+    if (!localStringResources) {
+        return undefined;
     }
-    const res = stringResources.filter(e => e.ComponentName == component && e.Key == key);
+    const res = localStringResources.filter(e => e.ComponentName == component && e.Key == key);
     if (res.length == 0) {
-        return null;
+        return undefined;
     }
     return res[0].Value;
 }
@@ -61,8 +56,8 @@ exports.getStringResourceValue = getStringResourceValue;
 function getTask(componentName, stateMachineName, callback) {
     const getOptions = (componentName, stateMachineName) => {
         return {
-            host: getConfig().host,
-            port: getConfig().port,
+            host: defaultConfig.host,
+            port: defaultConfig.port,
             path: '/api/Functions?componentName=' + escape(componentName) + '&stateMachineName=' + escape(stateMachineName),
             method: 'GET'
         };
@@ -94,8 +89,8 @@ function getTask(componentName, stateMachineName, callback) {
 
 function postObject(object, endpoint, callback) {
     const postOptions = {
-        host: getConfig().host,
-        port: getConfig().port,
+        host: defaultConfig.host,
+        port: defaultConfig.port,
         path: '/api/' + endpoint,
         method: 'POST',
         headers: {
@@ -175,13 +170,13 @@ function installEventQueue(callback) {
 
 exports.startEventQueue = (configuration, callback) => {
     setConfig(configuration);
-    getStringResources((error, success) => {
+    getStringResources((error, stringResources) => {
         if (error) {
             console.error(error);
             return callback && callback(error, null);
         }
-        stringResources = success;
-        updateConfiguration(configuration, (e, s) => callback && callback(e, s));
+        localStringResources = stringResources;
+        updateConfiguration(configuration, (error, success) => callback && callback(error, success));
     });
 };
 

@@ -32,7 +32,11 @@ With [npm](https://npmjs.org) do:
 
 ### getStringResourceValue(componentName, key)
 
-Returns the string resource value of the specified component and key or null if any value wasn't found
+Returns the string resource value of the specified component and key or undefined if any value wasn't found
+
+```js
+    value = getStringResourceValue('Component', 'Key');
+```
 
 ### registerTriggeredMethods(componentName, stateMachineName, triggeredMethod)
 
@@ -66,7 +70,7 @@ xcfunctions.registerTriggeredMethods('Component', 'StateMachine', {
 
 Starts the event queue that polls the REST service for triggered methods to execute.
 Configuration is optional and specifies the target runtime url.
-Callback is optional and handles errors when initialization failes.
+Callback is optional and handles errors when initialization fails.
 
 ```js
 configuration = {

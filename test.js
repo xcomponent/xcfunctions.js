@@ -81,7 +81,6 @@ test('triggered method call', done => {
         });
 
     xcfunctions.startEventQueue(null, () => {
-        console.log("runPengind2");
         jest.runOnlyPendingTimers();
     });
 });
@@ -136,7 +135,6 @@ test('error handling', done => {
         });
 
     xcfunctions.startEventQueue(null, () => {
-        console.log("runPengind2");
         jest.runOnlyPendingTimers();
     });
 
@@ -185,9 +183,8 @@ test('Test get string resources', done => {
 test('configuration update on event queue start with a modified configuration', done => {
     const port = 9676;
     const host = 'localhost';
-
     const url = 'http://' + host + ':' + port;
-
+    
     nock(url)
         .get('/api/StringResources')
         .reply(204, []);
@@ -203,7 +200,6 @@ test('configuration update on event queue start with a modified configuration', 
             done();
             return {};
         });
-
     xcfunctions.startEventQueue({
         timeoutInMillis: 1000,
         port: port,
