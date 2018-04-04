@@ -30,44 +30,9 @@ With [npm](https://npmjs.org) do:
 
 ## Methods
 
-### setConfig(configuration)
+### getStringResourceValue(componentName, key)
 
-Updates library configuration, which is an object containing the following keys:
-
-- `host`: the host where the server is running;
-- `port`: the port where the server is running;
-
-The following code snippet illustrates a call to the `setConfig(...)` method:
-
-```js
-xcfunctions.setConfig({
-    port: 8000,
-    host: 'localhost'
-});
-```
-
-### getConfig()
-
-Returns current library configuration.
-
-The following code snippet illustrates a call to the `getConfig()` method:
-
-```js
-xcfunctions.getConfig().port    // returns the port on which the server is running
-```
-
-### getStringResources(callback)
-
-Returns the string resources defined in xcomponent studio
-
-```js
-xcfunctions.getStringResources((err, data) => {
-    if (err) {
-        return;
-    }
-    // data = [{ ComponentName: ..., Key: ..., Value: ... }, ...]
-})
-```
+Returns the string resource value of the specified component and key or null if any value wasn't found
 
 ### registerTriggeredMethods(componentName, stateMachineName, triggeredMethod)
 
@@ -97,9 +62,21 @@ xcfunctions.registerTriggeredMethods('Component', 'StateMachine', {
 });
 ```
 
-### startEventQueue()
+### startEventQueue(configuration, callback)
 
 Starts the event queue that polls the REST service for triggered methods to execute.
+Configuration is optional and specifies the target runtime url.
+Callback is optional and handles errors when initialization failes.
+
+```js
+configuration = {
+    timeoutInMillis: ... // default 1000,
+    port: ..., // default 9676,
+    host: ... // default '127.0.0.1'
+}
+callback = (error, success) => {
+}
+```
 
 ## Writing triggered method implementation functions
 

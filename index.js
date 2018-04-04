@@ -1,7 +1,7 @@
 /* jshint esversion: 6 */
 
 const http = require('http');
-const request = require('sync-request');
+
 
 const nullBodyError = 'Body is null';
 
@@ -10,7 +10,7 @@ const defaultConfig = {
     port: 9676
 };
 
-setConfig = (config) => {
+function setConfig(config) {
     if (!config) {
         return;
     }
@@ -18,58 +18,46 @@ setConfig = (config) => {
     defaultConfig.port = (config.port) ? config.port : defaultConfig.port;
 };
 
-const getConfig = () => {
+function getConfig() {
     return defaultConfig;
 };
 
-var stringResources = null;
-const getStringResource = (component, key) => {
-    if (!stringResources) {
-        return null;
-    }
-    const resource = stringResources.filter(s => s.ComponentName == component && s.Key == key);
-    if (resource.length == 0) {
-        return null;
-    } else {
-        return resource[0].Value;
-    }
-};
-exports.getStringResource = getStringResource;
 
-function getAllStringResources(callback) {
+var stringResources = null;
+
+function getStringResources(callback) {
     const options = {
         host: getConfig().host,
         port: getConfig().port,
         path: '/api/StringResources',
         method: 'GET'
     };
-    console.log(options);
-    http
-        .request(options, function (response) {
-            let body = '';
-            response.on('data', (data) => {
-                body += data;
-            });
-            response.on('end', () => {
-                if (body === 'null') {
-                    callback(nullBodyError, null);
-                    return;
-                }
-
-                try {
-                    callback(null, JSON.parse(body));
-
-                } catch (e) {
-                    callback(e, null);
-                }
-            });
-            response.on('error', callback);
-        })
+    http.request(options, function (response) {
+        response.on('data', (data) => {
+            const jsonData = JSON.parse(data.toString('utf8'));
+            if (!jsonData.Message) {
+                callback(null, jsonData);
+            } else {
+                callback(new Error("Error on " + options.host + ":" + options.port), jsonData);
+            }
+        });
+    })
         .on('error', callback)
         .end();
-}
-exports.getAllStringResources = getAllStringResources;
+};
 
+function getStringResourceValue(component, key) {
+    if (!stringResources) {
+        return null;
+    }
+    const res = stringResources.filter(e => e.ComponentName == component && e.Key == key);
+    if (res.length == 0) {
+        return null;
+    }
+    return res[0].Value;
+}
+
+exports.getStringResourceValue = getStringResourceValue;
 
 function getTask(componentName, stateMachineName, callback) {
     const getOptions = (componentName, stateMachineName) => {
@@ -159,63 +147,43 @@ exports.registerTriggeredMethods = (componentName, stateMachineName, triggeredMe
     }
 }
 
-exports.startEventQueue = (configuration) => {
-    console.log('Registered triggered methods: ', triggeredMethods);
-    const retryIntervalSeconds = 5;
+function updateConfiguration(configuration, callback) {
+    if (configuration) {
+        const postConfigurationAction = () => postConfiguration(configuration, configurationCallback);
+        let configurationTimerID = null;
+        const configurationCallback = (error) => {
+            if (error) {
+                console.error('Error updating configuration: ', error);
+                callback(error, null);
+                return;
+            }
+            console.log('Configuraton successfuly updated!');
+            callback(null, true);
+        };
 
-    const installEventQueue = () => {
-        console.log('installEventQueue');
-        setInterval(() => {
-            console.log('WWWWWWWWWWWWWWW');
-            eventQueue();
-        }, 1000);
-        console.log('Waiting for tasks...');
-    };
-
-    const start = () => {
-        console.log("start", configuration);
-        if (configuration) {
-            setConfig(configuration);
-            const postConfigurationAction = () => postConfiguration(configuration, configurationCallback);
-            let configurationTimerID = null;
-            const configurationCallback = (error) => {
-                if (error) {
-                    console.error('Error updating configuration: ', error);
-                    console.error('Retrying in ', retryIntervalSeconds, 's...');
-                    configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds * 1000);
-                    return;
-                }
-
-                clearTimeout(configurationTimerID);
-                console.log('Configuraton successfuly updated!');
-                installEventQueue();
-            };
-            postConfigurationAction();
-            configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds * 1000);
-        } else {
-            installEventQueue();
-            console.log('Waiting for tasks...');
-        }
-    };
-
-    let stringResourcesTimerID = null;
-    const getAllStringResourcesCallback = (err, data) => {
-        if (err) {
-            console.error(data);
-            console.error('Error getting string resources: ', err);
-            console.error('Retrying in ', retryIntervalSeconds, 's...');
-            stringResourcesTimerID = setTimeout(getAllStringResourcesCallback, retryIntervalSeconds * 1000);
-            return;
-        }
-        // clearTimeout(stringResourcesTimerID);
-        console.log('String Resources successfuly updated!');
-        stringResources = data;
-        start();
+        postConfigurationAction();
+        installEventQueue(callback)
+    } else {
+        installEventQueue(callback)
     }
-    getAllStringResources(getAllStringResourcesCallback);
+}
 
-    //setTimeout(start, 0);
-    //start();
+function installEventQueue(callback) {
+    setInterval(eventQueue, 1000);
+    console.log('Waiting for tasks...');
+    callback(null, true);
+}
+
+exports.startEventQueue = (configuration, callback) => {
+    setConfig(configuration);
+    getStringResources((error, success) => {
+        if (error) {
+            console.error(error);
+            return callback && callback(error, null);
+        }
+        stringResources = success;
+        updateConfiguration(configuration, (e, s) => callback && callback(e, s));
+    });
 };
 
 function senderHandler(target, name) {
@@ -229,12 +197,10 @@ function senderHandler(target, name) {
 }
 
 function eventQueue() {
-    console.log("eventQueue!!!!!!!!!!!!!!!!")
     for (const componentName in triggeredMethods) {
         for (const stateMachineName in triggeredMethods[componentName]) {
             getTask(componentName, stateMachineName, (error, task) => {
                 if (error) {
-                    console.log('EEEEEERRRRRRRRRRRRRRRRRR');
                     if (error !== nullBodyError && !(error.code && error.code === 'ECONNREFUSED')) {
                         console.error(error);
                     }

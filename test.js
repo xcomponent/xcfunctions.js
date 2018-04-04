@@ -10,25 +10,7 @@ afterEach(() => {
     jest.clearAllTimers();
 });
 
-/*test('getAllStringResources', done => {
-    nock('http://127.0.0.1:9676')
-    .get('/api/StringResources')
-    .reply(200, [{ ComponentName: 'HW', Key: 'PORT', Value: '7890' }]);
-
-    xcfunctions.getAllStringResources((err, data) => {
-        if (err) {
-            console.log(err);
-            return;
-        }
-        done();
-    });
-});*/
-
 test('triggered method call', done => {
-    nock('http://127.0.0.1:9676')
-    .get('/api/StringResources')
-    .reply(200, []);
-
     nock('http://127.0.0.1:9676')
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
         .reply(200,
@@ -69,7 +51,11 @@ test('triggered method call', done => {
             done();
             return {};
         });
-    
+
+    nock('http://127.0.0.1:9676')
+        .get('/api/StringResources')
+        .reply(204, []);
+
     xcfunctions.registerTriggeredMethods(
         'Component',
         'StateMachine',
@@ -94,12 +80,13 @@ test('triggered method call', done => {
             }
         });
 
-    xcfunctions.startEventQueue();
-
-    jest.runOnlyPendingTimers();
+    xcfunctions.startEventQueue(null, () => {
+        console.log("runPengind2");
+        jest.runOnlyPendingTimers();
+    });
 });
 
-/*test('error handling', done => {
+test('error handling', done => {
     nock('http://127.0.0.1:9676')
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
         .reply(200,
@@ -135,6 +122,10 @@ test('triggered method call', done => {
             return {};
         });
 
+    nock('http://127.0.0.1:9676')
+        .get('/api/StringResources')
+        .reply(204, []);
+
     xcfunctions.registerTriggeredMethods(
         'Component',
         'StateMachine',
@@ -144,47 +135,62 @@ test('triggered method call', done => {
             }
         });
 
-    xcfunctions.startEventQueue();
+    xcfunctions.startEventQueue(null, () => {
+        console.log("runPengind2");
+        jest.runOnlyPendingTimers();
+    });
 
-    jest.runOnlyPendingTimers();
 });
 
 test('configuration update on event queue start', done => {
     nock('http://127.0.0.1:9676')
+        .get('/api/StringResources')
+        .reply(204, []);
+
+    nock('http://127.0.0.1:9676')
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
         .reply(204);
 
     nock('http://127.0.0.1:9676')
         .post('/api/Configuration')
         .reply(204, (uri, body) => {
-            expect(body.TimeoutInMillis).toBe(1000);
+            expect(body.timeoutInMillis).toBe(1000);
             done();
             return {};
         });
 
     xcfunctions.startEventQueue({
-        TimeoutInMillis: 1000
+        timeoutInMillis: 1000
+    }, () => {
+        jest.runOnlyPendingTimers();
     });
+
 });
 
 test('Test get string resources', done => {
-    const expectedJsonData = [{ ComponentName: 'HW', Key: 'PORT', Value: '7890' }];
+    const expectedJsonData = [{ ComponentName: 'HW', Key: 'PORT', Value: '8080' }];
     nock('http://127.0.0.1:9676')
         .get('/api/StringResources')
         .reply(204, expectedJsonData);
 
-    expect(xcfunctions.getStringResource('HW', 'PORT')).toEqual('7890');
-    done();
-
     xcfunctions.startEventQueue({
-        TimeoutInMillis: 1000
+        timeoutInMillis: 1000
+    }, () => {
+        jest.runOnlyPendingTimers();
+        expect(xcfunctions.getStringResourceValue('HW', 'PORT')).toEqual('8080');
+        done();
     });
 });
 
 test('configuration update on event queue start with a modified configuration', done => {
-    const port = 9999;
+    const port = 9676;
     const host = 'localhost';
+
     const url = 'http://' + host + ':' + port;
+
+    nock(url)
+        .get('/api/StringResources')
+        .reply(204, []);
 
     nock(url)
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
@@ -193,16 +199,16 @@ test('configuration update on event queue start with a modified configuration', 
     nock(url)
         .post('/api/Configuration')
         .reply(204, (uri, body) => {
-            expect(body.TimeoutInMillis).toBe(1000);
+            expect(body.timeoutInMillis).toBe(1000);
             done();
             return {};
         });
 
     xcfunctions.startEventQueue({
-        TimeoutInMillis: 1000,
+        timeoutInMillis: 1000,
         port: port,
         host: host
+    }, () => {
+        jest.runOnlyPendingTimers();
     });
-});*/
-
-
+});
