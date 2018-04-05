@@ -52,6 +52,18 @@ test('triggered method call', done => {
             return {};
         });
 
+    nock('http://127.0.0.1:9676')
+        .get('/api/StringResources')
+        .reply(204, []);
+
+    nock('http://127.0.0.1:9676')
+        .post('/api/Configuration')
+        .reply(204, (uri, body) => {
+            expect(body.timeoutInMillis).toBe(1000);
+            done();
+            return {};
+        });
+
     xcfunctions.registerTriggeredMethods(
         'Component',
         'StateMachine',
@@ -76,9 +88,9 @@ test('triggered method call', done => {
             }
         });
 
-    xcfunctions.startEventQueue();
-
-    jest.runOnlyPendingTimers();
+    xcfunctions.startEventQueue(null, () => {
+        jest.runOnlyPendingTimers();
+    });
 });
 
 test('error handling', done => {
@@ -117,6 +129,10 @@ test('error handling', done => {
             return {};
         });
 
+    nock('http://127.0.0.1:9676')
+        .get('/api/StringResources')
+        .reply(204, []);
+
     xcfunctions.registerTriggeredMethods(
         'Component',
         'StateMachine',
@@ -126,12 +142,17 @@ test('error handling', done => {
             }
         });
 
-    xcfunctions.startEventQueue();
+    xcfunctions.startEventQueue(null, () => {
+        jest.runOnlyPendingTimers();
+    });
 
-    jest.runOnlyPendingTimers();
 });
 
 test('configuration update on event queue start', done => {
+    nock('http://127.0.0.1:9676')
+        .get('/api/StringResources')
+        .reply(204, []);
+
     nock('http://127.0.0.1:9676')
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
         .reply(204);
@@ -139,13 +160,14 @@ test('configuration update on event queue start', done => {
     nock('http://127.0.0.1:9676')
         .post('/api/Configuration')
         .reply(204, (uri, body) => {
-            expect(body.TimeoutInMillis).toBe(1000);
-            done();
+            expect(body.timeoutInMillis).toBe(1000);
             return {};
         });
 
     xcfunctions.startEventQueue({
-        TimeoutInMillis: 1000
+        timeoutInMillis: 1000
+    }, () => {
+        done();
     });
 });
 
@@ -155,32 +177,29 @@ test('Test get string resources', done => {
         .get('/api/StringResources')
         .reply(204, expectedJsonData);
 
-    xcfunctions.getStringResources((err, jsonData) => {
-        if (err) {
-            console.log(err);
-            return;
-        }
-        expect(expectedJsonData).toEqual(jsonData);
-        done();
-    });
-    
+    nock('http://127.0.0.1:9676')
+        .post('/api/Configuration')
+        .reply(204, (uri, body) => {
+            expect(body.timeoutInMillis).toBe(1000);
+            return {};
+        });
+
     xcfunctions.startEventQueue({
-        TimeoutInMillis: 1000
+        timeoutInMillis: 1000
+    }, () => {
+        expect(xcfunctions.getStringResourceValue('HW', 'PORT')).toBe('8080');
+        done();
     });
 });
 
 test('configuration update on event queue start with a modified configuration', done => {
-    const port = 9999;
+    const port = 9676;
     const host = 'localhost';
-    xcfunctions.setConfig({
-        port: port,
-        host: host
-    });
-
-    expect(xcfunctions.getConfig().port).toBe(port);
-    expect(xcfunctions.getConfig().host).toBe(host);
-
     const url = 'http://' + host + ':' + port;
+
+    nock(url)
+        .get('/api/StringResources')
+        .reply(204, []);
 
     nock(url)
         .get('/api/Functions?componentName=Component&stateMachineName=StateMachine')
@@ -189,14 +208,13 @@ test('configuration update on event queue start with a modified configuration', 
     nock(url)
         .post('/api/Configuration')
         .reply(204, (uri, body) => {
-            expect(body.TimeoutInMillis).toBe(1000);
+            expect(body.timeoutInMillis).toBe(1000);
             done();
             return {};
         });
-
     xcfunctions.startEventQueue({
-        TimeoutInMillis: 1000
+        timeoutInMillis: 1000,
+        port: port,
+        host: host
     });
 });
-
-

@@ -2,7 +2,6 @@
 
 const http = require('http');
 
-
 const nullBodyError = 'Body is null';
 
 const defaultConfig = {
@@ -10,7 +9,7 @@ const defaultConfig = {
     port: 9676
 };
 
-exports.setConfig = (config) => {
+function setConfig(config) {
     if (!config) {
         return;
     }
@@ -18,16 +17,12 @@ exports.setConfig = (config) => {
     defaultConfig.port = (config.port) ? config.port : defaultConfig.port;
 };
 
-const getConfig = () => {
-    return defaultConfig;
-};
-
-exports.getConfig = getConfig;
+var localStringResources = null;
 
 function getStringResources(callback) {
     const options = {
-        host: getConfig().host,
-        port: getConfig().port,
+        host: defaultConfig.host,
+        port: defaultConfig.port,
         path: '/api/StringResources',
         method: 'GET'
     };
@@ -41,16 +36,28 @@ function getStringResources(callback) {
             }
         });
     })
-    .on('error', callback)
-    .end();
+        .on('error', callback)
+        .end();
 };
-exports.getStringResources = getStringResources;
+
+function getStringResourceValue(component, key) {
+    if (!localStringResources) {
+        return undefined;
+    }
+    const matches = localStringResources.filter(e => e.ComponentName == component && e.Key == key);
+    if (matches.length == 0) {
+        return undefined;
+    }
+    return matches[0].Value;
+}
+
+exports.getStringResourceValue = getStringResourceValue;
 
 function getTask(componentName, stateMachineName, callback) {
     const getOptions = (componentName, stateMachineName) => {
         return {
-            host: getConfig().host,
-            port: getConfig().port,
+            host: defaultConfig.host,
+            port: defaultConfig.port,
             path: '/api/Functions?componentName=' + escape(componentName) + '&stateMachineName=' + escape(stateMachineName),
             method: 'GET'
         };
@@ -82,8 +89,8 @@ function getTask(componentName, stateMachineName, callback) {
 
 function postObject(object, endpoint, callback) {
     const postOptions = {
-        host: getConfig().host,
-        port: getConfig().port,
+        host: defaultConfig.host,
+        port: defaultConfig.port,
         path: '/api/' + endpoint,
         method: 'POST',
         headers: {
@@ -134,36 +141,52 @@ exports.registerTriggeredMethods = (componentName, stateMachineName, triggeredMe
     }
 }
 
-exports.startEventQueue = (configuration) => {
-    console.log('Registered triggered methods: ', triggeredMethods);
+function setConfig(configuration) {
+    defaultConfig.host = (configuration.host) ? configuration.host : defaultConfig.host;
+    defaultConfig.port = (configuration.port) ? configuration.port : defaultConfig.port;
+}
 
-    const installEventQueue = () => {
-        setInterval(eventQueue, 1000);
-        console.log('Waiting for tasks...');
-    };
-
+function updateConfiguration(configuration, callback) {
     if (configuration) {
+        setConfig(configuration);
         const postConfigurationAction = () => postConfiguration(configuration, configurationCallback);
-        const retryIntervalSeconds = 5;
-        let configurationTimerID = null;
         const configurationCallback = (error) => {
             if (error) {
                 console.error('Error updating configuration: ', error);
-                console.error('Retrying in ', retryIntervalSeconds, 's...');
-                configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds * 1000);
+                callback(error, null);
                 return;
             }
-
-            clearTimeout(configurationTimerID);
             console.log('Configuraton successfuly updated!');
-            installEventQueue();
+            callback(null, true);
         };
-
         postConfigurationAction();
-        configurationTimerID = setTimeout(postConfigurationAction, retryIntervalSeconds * 1000);
     } else {
-        installEventQueue();
+        callback(null, true);
     }
+}
+
+function installEventQueue(callback) {
+    setInterval(eventQueue);
+    callback(null, true);
+    console.log('Waiting for tasks...');
+}
+
+exports.startEventQueue = (configuration, callback) => {
+    updateConfiguration(configuration, (error, success) => {
+        if (error) {
+            console.error(error);
+            return callback && callback(error, success);
+        }
+        getStringResources((error, stringResources) => {
+
+            if (error) {
+                console.error(error);
+                return callback && callback(error, null);
+            }
+            localStringResources = stringResources;
+            installEventQueue((error, success) => callback && callback(error, success));
+        });
+    });
 };
 
 function senderHandler(target, name) {

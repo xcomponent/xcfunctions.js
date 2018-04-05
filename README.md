@@ -30,32 +30,6 @@ With [npm](https://npmjs.org) do:
 
 ## Methods
 
-### setConfig(configuration)
-
-Updates library configuration, which is an object containing the following keys:
-
-- `host`: the host where the server is running;
-- `port`: the port where the server is running;
-
-The following code snippet illustrates a call to the `setConfig(...)` method:
-
-```js
-xcfunctions.setConfig({
-    port: 8000,
-    host: 'localhost'
-});
-```
-
-### getConfig()
-
-Returns current library configuration.
-
-The following code snippet illustrates a call to the `getConfig()` method:
-
-```js
-xcfunctions.getConfig().port    // returns the port on which the server is running
-```
-
 ### registerTriggeredMethods(componentName, stateMachineName, triggeredMethod)
 
 Registers a set of triggered method implementation functions and associate them to triggered methods in the provided component/state machine pair.
@@ -84,9 +58,37 @@ xcfunctions.registerTriggeredMethods('Component', 'StateMachine', {
 });
 ```
 
-### startEventQueue()
+### startEventQueue(configuration, callback)
 
 Starts the event queue that polls the REST service for triggered methods to execute.
+
+The `configuration` parameter is optional and it has the following structure:
+
+```js
+configuration = {
+    port:, number,
+    host: string,
+    timeoutInMillis: number,
+}
+```
+
+Where:
+- `timeoutInMillis`: is the timeout for the execution of triggered methods defined in milliseconds; its default value is 1000ms.
+- `port`: is the port where the state machine is exposed on the server; its default value is 9676.
+- `host`: is the host name where the state machine is exposed on the server; its default value is `127.0.0.1`.
+
+The `callback` parameter is optional and allows one to detect initialization errors, and to be notified when polling started.
+It has the following signature:
+
+```js
+function callback(error, success) {
+    if (error) {
+        // erro contains the error message
+    } else if (success) {
+        // event queue ready and polling started
+    }
+}
+```
 
 ## Writing triggered method implementation functions
 
@@ -143,6 +145,23 @@ Where `transitionName` is the name of the transition to trigger, `sentEvent` rep
     } 
 }
 ```
+
+### Retrieving component configuration
+
+Strings resources are a per component key value store that store the configuration of each XComponent component. It is read on the runtime startup and is immutable. In order to access to string resources in your JavaScript code, use the `getStringResourceValue` method in your triggered methods.
+
+It follows this signature:
+
+```js
+getStringResourceValue(componentName, key)
+```
+
+Where:
+
+- `componentName`: is the name from where to read the key,
+- `key`: the key to read
+
+The method returns `undefined` if the key is not found.
 
 ## Contributing
 
