@@ -148,7 +148,7 @@ Where `transitionName` is the name of the transition to trigger, `sentEvent` rep
 
 ### Retrieving component configuration
 
-Strings resources are a per component key value store that store the configuration of each XComponent component. It is read on the runtime startup and is immutable. In order to access to string resources in your JavaScript code, use the `getStringResourceValue` method.
+Strings resources are a per component key value store that store the configuration of each XComponent component. It is read on the runtime startup and is immutable. In order to access to string resources in your JavaScript code, use the `getStringResourceValue` method in your triggered methods.
 
 It follows this signature:
 
@@ -161,7 +161,7 @@ Where:
 - `componentName`: is the name from where to read the key,
 - `key`: the key to read
 
-Returns the string resource value of the specified component and key or undefined if any value wasn't found
+The method returns `undefined` if the key is not found.
 
 ## Contributing
 
