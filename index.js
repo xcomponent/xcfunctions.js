@@ -44,11 +44,11 @@ function getStringResourceValue(component, key) {
     if (!localStringResources) {
         return undefined;
     }
-    const res = localStringResources.filter(e => e.ComponentName == component && e.Key == key);
-    if (res.length == 0) {
+    const matches = localStringResources.filter(e => e.ComponentName == component && e.Key == key);
+    if (matches.length == 0) {
         return undefined;
     }
-    return res[0].Value;
+    return matches[0].Value;
 }
 
 exports.getStringResourceValue = getStringResourceValue;
