@@ -164,8 +164,6 @@ test('configuration update on event queue start', done => {
             return {};
         });
 
-    //jest.runOnlyPendingTimers();
-
     xcfunctions.startEventQueue({
         timeoutInMillis: 1000
     }, () => {
