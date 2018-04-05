@@ -160,7 +160,7 @@ Where:
 
 - `componentName`: is the name from where to read the key,
 - `key`: the key to read
--
+
 Returns the string resource value of the specified component and key or undefined if any value wasn't found
 
 ## Contributing
