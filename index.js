@@ -143,8 +143,9 @@ exports.registerTriggeredMethods = (componentName, stateMachineName, triggeredMe
 
 function updateConfiguration(configuration, callback) {
     if (configuration) {
+        defaultConfig.host = (configuration.host) ? configuration.host : defaultConfig.host;
+        defaultConfig.port = (configuration.port) ? configuration.port : defaultConfig.port;
         const postConfigurationAction = () => postConfiguration(configuration, configurationCallback);
-        let configurationTimerID = null;
         const configurationCallback = (error) => {
             if (error) {
                 console.error('Error updating configuration: ', error);
@@ -154,29 +155,33 @@ function updateConfiguration(configuration, callback) {
             console.log('Configuraton successfuly updated!');
             callback(null, true);
         };
-
         postConfigurationAction();
-        installEventQueue(callback)
     } else {
-        installEventQueue(callback)
+        callback(null, true);
     }
 }
 
 function installEventQueue(callback) {
-    setInterval(eventQueue, 1000);
-    console.log('Waiting for tasks...');
+    setInterval(eventQueue);
     callback(null, true);
+    console.log('Waiting for tasks...');
 }
 
 exports.startEventQueue = (configuration, callback) => {
-    setConfig(configuration);
-    getStringResources((error, stringResources) => {
+    updateConfiguration(configuration, (error, success) => {
         if (error) {
             console.error(error);
-            return callback && callback(error, null);
+            return callback && callback(error, success);
         }
-        localStringResources = stringResources;
-        updateConfiguration(configuration, (error, success) => callback && callback(error, success));
+        getStringResources((error, stringResources) => {
+
+            if (error) {
+                console.error(error);
+                return callback && callback(error, null);
+            }
+            localStringResources = stringResources;
+            installEventQueue((error, success) => callback && callback(error, success));
+        });
     });
 };
 

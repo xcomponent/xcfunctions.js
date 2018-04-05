@@ -56,6 +56,14 @@ test('triggered method call', done => {
         .get('/api/StringResources')
         .reply(204, []);
 
+    nock('http://127.0.0.1:9676')
+        .post('/api/Configuration')
+        .reply(204, (uri, body) => {
+            expect(body.timeoutInMillis).toBe(1000);
+            done();
+            return {};
+        });
+
     xcfunctions.registerTriggeredMethods(
         'Component',
         'StateMachine',
@@ -153,16 +161,16 @@ test('configuration update on event queue start', done => {
         .post('/api/Configuration')
         .reply(204, (uri, body) => {
             expect(body.timeoutInMillis).toBe(1000);
-            done();
             return {};
         });
+
+    //jest.runOnlyPendingTimers();
 
     xcfunctions.startEventQueue({
         timeoutInMillis: 1000
     }, () => {
-        jest.runOnlyPendingTimers();
+        done();
     });
-
 });
 
 test('Test get string resources', done => {
@@ -171,11 +179,17 @@ test('Test get string resources', done => {
         .get('/api/StringResources')
         .reply(204, expectedJsonData);
 
+    nock('http://127.0.0.1:9676')
+        .post('/api/Configuration')
+        .reply(204, (uri, body) => {
+            expect(body.timeoutInMillis).toBe(1000);
+            return {};
+        });
+
     xcfunctions.startEventQueue({
         timeoutInMillis: 1000
     }, () => {
-        jest.runOnlyPendingTimers();
-        expect(xcfunctions.getStringResourceValue('HW', 'PORT')).toEqual('8080');
+        expect(xcfunctions.getStringResourceValue('HW', 'PORT')).toBe('8080');
         done();
     });
 });
@@ -184,7 +198,7 @@ test('configuration update on event queue start with a modified configuration', 
     const port = 9676;
     const host = 'localhost';
     const url = 'http://' + host + ':' + port;
-    
+
     nock(url)
         .get('/api/StringResources')
         .reply(204, []);
@@ -204,7 +218,5 @@ test('configuration update on event queue start with a modified configuration', 
         timeoutInMillis: 1000,
         port: port,
         host: host
-    }, () => {
-        jest.runOnlyPendingTimers();
     });
 });
