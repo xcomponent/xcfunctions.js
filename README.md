@@ -30,14 +30,6 @@ With [npm](https://npmjs.org) do:
 
 ## Methods
 
-### getStringResourceValue(componentName, key)
-
-Returns the string resource value of the specified component and key or undefined if any value wasn't found
-
-```js
-    value = getStringResourceValue('Component', 'Key');
-```
-
 ### registerTriggeredMethods(componentName, stateMachineName, triggeredMethod)
 
 Registers a set of triggered method implementation functions and associate them to triggered methods in the provided component/state machine pair.
@@ -69,16 +61,32 @@ xcfunctions.registerTriggeredMethods('Component', 'StateMachine', {
 ### startEventQueue(configuration, callback)
 
 Starts the event queue that polls the REST service for triggered methods to execute.
-Configuration is optional and specifies the target runtime url.
-Callback is optional and handles errors when initialization fails.
+
+The `configuration` parameter is optional and it has the following structure:
 
 ```js
 configuration = {
-    timeoutInMillis: ... // default 1000,
-    port: ..., // default 9676,
-    host: ... // default '127.0.0.1'
+    port:, number,
+    host: string,
+    timeoutInMillis: number,
 }
-callback = (error, success) => {
+```
+
+Where:
+- `timeoutInMillis`: is the timeout for the execution of triggered methods defined in milliseconds; its default value is 1000ms.
+- `port`: is the port where the state machine is exposed on the server; its default value is 9676.
+- `host`: is the host name where the state machine is exposed on the server; its default value is `127.0.0.1`.
+
+The `callback` parameter is optional and allows one to detect initialization errors, and to be notified when polling started.
+It has the following signature:
+
+```js
+function callback(error, success) {
+    if (error) {
+        // erro contains the error message
+    } else if (success) {
+        // event queue ready and polling started
+    }
 }
 ```
 
@@ -137,6 +145,23 @@ Where `transitionName` is the name of the transition to trigger, `sentEvent` rep
     } 
 }
 ```
+
+### Retrieving component configuration
+
+Strings resources are a per component key value store that store the configuration of each XComponent component. It is read on the runtime startup and is immutable. In order to access to string resources in your JavaScript code, use the `getStringResourceValue` method.
+
+It follows this signature:
+
+```js
+getStringResourceValue(componentName, key)
+```
+
+Where:
+
+- `componentName`: is the name from where to read the key,
+- `key`: the key to read
+-
+Returns the string resource value of the specified component and key or undefined if any value wasn't found
 
 ## Contributing
 
