@@ -52,9 +52,10 @@ test('triggered method call', done => {
             return {};
         });
 
+    const expectedJsonData = [{ ComponentName: 'Component', Key: 'PORT', Value: '8080' }];
     nock('http://127.0.0.1:9676')
         .get('/api/StringResources')
-        .reply(204, []);
+        .reply(204, expectedJsonData);
 
     nock('http://127.0.0.1:9676')
         .post('/api/Configuration')
@@ -68,7 +69,7 @@ test('triggered method call', done => {
         'Component',
         'StateMachine',
         {
-            'TriggeredMethod': (event, publicMember, internalMember, context, sender) => {
+            'TriggeredMethod': (event, publicMember, internalMember, context, sender, stringResources) => {
                 expect(event.Code).toBe(0);
                 expect(publicMember.Code).toBe(1);
                 expect(internalMember.Code).toBe(2);
@@ -82,6 +83,7 @@ test('triggered method call', done => {
                 expect(context.MessageType).toBe('event.type.name.Name');
                 expect(context.ErrorMessage).toBe('error');
                 expect(context.SessionData).toBe('data');
+                expect(stringResources.PORT).toBe('8080');
 
                 publicMember.Code++;
                 internalMember.Code++;
@@ -137,7 +139,7 @@ test('error handling', done => {
         'Component',
         'StateMachine',
         {
-            'TriggeredMethod': (event, publicMember, internalMember, context, sender) => {
+            'TriggeredMethod': (event, publicMember, internalMember, context, sender, stringResources) => {
                 throw "error";
             }
         });
@@ -167,27 +169,6 @@ test('configuration update on event queue start', done => {
     xcfunctions.startEventQueue({
         timeoutInMillis: 1000
     }, () => {
-        done();
-    });
-});
-
-test('Test get string resources', done => {
-    const expectedJsonData = [{ ComponentName: 'HW', Key: 'PORT', Value: '8080' }];
-    nock('http://127.0.0.1:9676')
-        .get('/api/StringResources')
-        .reply(204, expectedJsonData);
-
-    nock('http://127.0.0.1:9676')
-        .post('/api/Configuration')
-        .reply(204, (uri, body) => {
-            expect(body.timeoutInMillis).toBe(1000);
-            return {};
-        });
-
-    xcfunctions.startEventQueue({
-        timeoutInMillis: 1000
-    }, () => {
-        expect(xcfunctions.getStringResourceValue('HW', 'PORT')).toBe('8080');
         done();
     });
 });
