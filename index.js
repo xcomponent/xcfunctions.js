@@ -141,10 +141,14 @@ exports.registerTriggeredMethods = (componentName, stateMachineName, triggeredMe
     }
 }
 
+function setConfig(configuration) {
+    defaultConfig.host = (configuration.host) ? configuration.host : defaultConfig.host;
+    defaultConfig.port = (configuration.port) ? configuration.port : defaultConfig.port;
+}
+
 function updateConfiguration(configuration, callback) {
     if (configuration) {
-        defaultConfig.host = (configuration.host) ? configuration.host : defaultConfig.host;
-        defaultConfig.port = (configuration.port) ? configuration.port : defaultConfig.port;
+        setConfig(configuration);
         const postConfigurationAction = () => postConfiguration(configuration, configurationCallback);
         const configurationCallback = (error) => {
             if (error) {
