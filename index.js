@@ -15,9 +15,9 @@ function setConfig(config) {
     }
     defaultConfig.host = (config.host) ? config.host : defaultConfig.host;
     defaultConfig.port = (config.port) ? config.port : defaultConfig.port;
-};
+}
 
-var localStringResources = null;
+var localStringResources =  {};
 
 function getStringResources(callback) {
     const options = {
@@ -38,20 +38,7 @@ function getStringResources(callback) {
     })
         .on('error', callback)
         .end();
-};
-
-function getStringResourceValue(component, key) {
-    if (!localStringResources) {
-        return undefined;
-    }
-    const matches = localStringResources.filter(e => e.ComponentName == component && e.Key == key);
-    if (matches.length == 0) {
-        return undefined;
-    }
-    return matches[0].Value;
 }
-
-exports.getStringResourceValue = getStringResourceValue;
 
 function getTask(componentName, stateMachineName, callback) {
     const getOptions = (componentName, stateMachineName) => {
@@ -139,7 +126,7 @@ exports.registerTriggeredMethods = (componentName, stateMachineName, triggeredMe
     for (const triggeredMethodName in triggeredMethods) {
         exports.registerTriggeredMethod(componentName, stateMachineName, triggeredMethodName, triggeredMethods[triggeredMethodName]);
     }
-}
+};
 
 function setConfig(configuration) {
     defaultConfig.host = (configuration.host) ? configuration.host : defaultConfig.host;
@@ -171,6 +158,14 @@ function installEventQueue(callback) {
     console.log('Waiting for tasks...');
 }
 
+function addStringResource(component, key, value) {
+    if (!localStringResources[component]) {
+        localStringResources[component] = {};
+    }
+
+    localStringResources[component][key] = value;
+}
+
 exports.startEventQueue = (configuration, callback) => {
     updateConfiguration(configuration, (error, success) => {
         if (error) {
@@ -178,12 +173,11 @@ exports.startEventQueue = (configuration, callback) => {
             return callback && callback(error, success);
         }
         getStringResources((error, stringResources) => {
-
             if (error) {
                 console.error(error);
                 return callback && callback(error, null);
             }
-            localStringResources = stringResources;
+            stringResources.forEach((keypair) => addStringResource(keypair.ComponentName, keypair.Key, keypair.Value));
             installEventQueue((error, success) => callback && callback(error, success));
         });
     });
@@ -220,9 +214,10 @@ function eventQueue() {
                 const triggeredMethod = triggeredMethods[componentName][stateMachineName][task.FunctionName];
                 const sendersList = [];
                 const sender = new Proxy({ Senders: sendersList }, { get: senderHandler });
+                const stringResources = localStringResources[componentName] || {};
 
                 try {
-                    triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender);
+                    triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender, stringResources);
                 } catch (e) {
                     console.error("Caught exception", e);
                     error = e;

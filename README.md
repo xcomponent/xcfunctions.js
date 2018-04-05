@@ -46,11 +46,11 @@ The following code snippet illustrates a call to the `registerTriggeredMethods(.
 
 ```js
 xcfunctions.registerTriggeredMethods('Component', 'StateMachine', {
-    ExecuteOn_EntryPoint: (event, publicMember, internalMember, context, sender) => {
+    ExecuteOn_EntryPoint: (event, publicMember, internalMember, context, sender, stringResources) => {
         ...
     },
 
-    ExecuteOn_S0_From_S1_Through_T: (event, publicMember, internalMember, context, sender) => {
+    ExecuteOn_S0_From_S1_Through_T: (event, publicMember, internalMember, context, sender, stringResources) => {
         ...
     },
 
@@ -95,7 +95,7 @@ function callback(error, success) {
 A triggered method implementation function has the following signature:
 
 ```js
-(event, publicMember, internalMember, context, sender) => {
+(event, publicMember, internalMember, context, sender, stringResources) => {
     ...
 }
 ```
@@ -129,6 +129,8 @@ sender.transitionName(sentEvent, useContext);
 
 Where `transitionName` is the name of the transition to trigger, `sentEvent` represents the event to be sent to trigger the transition and `useContext` is a boolean indicating if the event should be forwarded only to the current state machine (`true`) or to all state machines of the same type (`false`). 
 
+- `stringResources` is an object that contains the string resources configured for the component. Strings resources are a per component key value store that store the configuration of each XComponent component. It is read on the runtime startup and is immutable.
+
 ### Special transitions
 
 - **Entry point triggered methods**: these transitions are executed once per component, when its entry point state machine is instantiated. The triggered method should be called `ExecuteOn_EntryPoint` and its triggering event is an empty object, and should therefore be ignored.
@@ -145,23 +147,6 @@ Where `transitionName` is the name of the transition to trigger, `sentEvent` rep
     } 
 }
 ```
-
-### Retrieving component configuration
-
-Strings resources are a per component key value store that store the configuration of each XComponent component. It is read on the runtime startup and is immutable. In order to access to string resources in your JavaScript code, use the `getStringResourceValue` method in your triggered methods.
-
-It follows this signature:
-
-```js
-getStringResourceValue(componentName, key)
-```
-
-Where:
-
-- `componentName`: is the name from where to read the key,
-- `key`: the key to read
-
-The method returns `undefined` if the key is not found.
 
 ## Contributing
 
