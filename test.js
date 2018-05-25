@@ -154,7 +154,7 @@ test('async triggered method call', done => {
         'Component',
         'StateMachine',
         {
-            'TriggeredMethod_Async': (event, publicMember, internalMember, context, sender, stringResources, done) => {
+            'TriggeredMethod': (event, publicMember, internalMember, context, sender, stringResources, done) => {
                 expect(event.Code).toBe(0);
                 expect(publicMember.Code).toBe(1);
                 expect(internalMember.Code).toBe(2);

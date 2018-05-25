@@ -207,7 +207,7 @@ function eventQueue() {
                 console.log('Received task: ', task);
 
                 const triggeredMethod = triggeredMethods[componentName][stateMachineName][task.FunctionName];
-                const triggeredMethodAsync = triggeredMethods[componentName][stateMachineName][task.FunctionName + "_Async"];
+                const isTriggeredMethodAsync = triggeredMethod && triggeredMethod.length > 6;
                 const sendersList = [];
                 const sender = new Proxy({ Senders: sendersList }, { get: senderHandler });
                 const stringResources = localStringResources[componentName] || {};
@@ -233,11 +233,11 @@ function eventQueue() {
                     }
                 };
                 try {
-                    if (!triggeredMethod && !triggeredMethodAsync) {
+                    if (!triggeredMethod) {
                         error = new Error('Received task for unregistered function', task.FunctionName);
                         done(error);
-                    } else if (triggeredMethodAsync) {
-                        triggeredMethodAsync(task.Event, task.PublicMember, task.InternalMember, task.Context, sender, stringResources, done);
+                    } else if (isTriggeredMethodAsync) {
+                        triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender, stringResources, done);
                     } else {
                         triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender, stringResources);
                         done();
