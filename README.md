@@ -42,6 +42,8 @@ Triggered methods are named following this pattern (special cases will be listed
 
 For a transition named `TransitioName`, from state `FromStateName` to `ToStateName`.
 
+If the code of the trigger method is asynchronous, add done parameter and call it back at the end of the execution.
+
 The following code snippet illustrates a call to the `registerTriggeredMethods(...)` method:
 
 ```js
@@ -52,6 +54,10 @@ xcfunctions.registerTriggeredMethods('Component', 'StateMachine', {
 
     ExecuteOn_S0_From_S1_Through_T: (event, publicMember, internalMember, context, sender, stringResources) => {
         ...
+    },
+
+    ExecuteOn_S2_From_S1_Through_T2: (event, publicMember, internalMember, context, sender, stringResources, done) => {
+        done();
     },
 
     ...

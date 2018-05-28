@@ -206,41 +206,46 @@ function eventQueue() {
 
                 console.log('Received task: ', task);
 
-                if (!(task.FunctionName in triggeredMethods[componentName][stateMachineName])) {
-                    console.error('Received task for unregistered function', task.FunctionName);
-                    return;
-                }
-
                 const triggeredMethod = triggeredMethods[componentName][stateMachineName][task.FunctionName];
+                const isTriggeredMethodAsync = triggeredMethod && triggeredMethod.length > 6;
                 const sendersList = [];
                 const sender = new Proxy({ Senders: sendersList }, { get: senderHandler });
                 const stringResources = localStringResources[componentName] || {};
-
+                const done = (err) => {
+                    if (!err) {
+                        postResult({
+                            // jshint ignore:start
+                            Senders: sendersList,
+                            PublicMember: task.PublicMember,
+                            InternalMember: task.InternalMember,
+                            ComponentName: task.ComponentName,
+                            StateMachineName: task.StateMachineName,
+                            RequestId: task.RequestId
+                            // jshint ignore:end
+                        });
+                    } else {
+                        postResult({
+                            // jshint ignore:start
+                            IsError: true,
+                            ErrorMessage: "" + err
+                            // jshint ignore:end
+                        });
+                    }
+                };
                 try {
-                    triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender, stringResources);
+                    if (!triggeredMethod) {
+                        error = new Error('Received task for unregistered function', task.FunctionName);
+                        done(error);
+                    } else if (isTriggeredMethodAsync) {
+                        triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender, stringResources, done);
+                    } else {
+                        triggeredMethod(task.Event, task.PublicMember, task.InternalMember, task.Context, sender, stringResources);
+                        done();
+                    }
                 } catch (e) {
                     console.error("Caught exception", e);
                     error = e;
-                }
-
-                if (!error) {
-                    postResult({
-                        // jshint ignore:start
-                        Senders: sendersList,
-                        PublicMember: task.PublicMember,
-                        InternalMember: task.InternalMember,
-                        ComponentName: task.ComponentName,
-                        StateMachineName: task.StateMachineName,
-                        RequestId: task.RequestId
-                        // jshint ignore:end
-                    });
-                } else {
-                    postResult({
-                        // jshint ignore:start
-                        IsError: true,
-                        ErrorMessage: "" + error
-                        // jshint ignore:end
-                    });
+                    done(e);
                 }
             });
         }
