@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/xcomponent/xcfunctions.js#readme",
   "devDependencies": {
-    "jest": "^22.0.4",
+    "jest": "^23.0.0",
     "nock": "^9.1.5"
   },
   "dependencies": {}
