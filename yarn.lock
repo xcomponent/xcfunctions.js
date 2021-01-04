@@ -1716,9 +1716,10 @@ jest-worker@^23.0.1:
   dependencies:
     merge-stream "^1.0.1"
 
-jest@^23.0.0:
+jest@23.0.1:
   version "23.0.1"
   resolved "https://registry.yarnpkg.com/jest/-/jest-23.0.1.tgz#0d083290ee4112cecfb780df6ff81332ed373201"
+  integrity sha1-DQgykO5BEs7Pt4Dfb/gTMu03MgE=
   dependencies:
     import-local "^1.0.0"
     jest-cli "^23.0.1"
@@ -2052,9 +2053,10 @@ neo-async@^2.6.0:
   version "2.6.1"
   resolved "https://registry.yarnpkg.com/neo-async/-/neo-async-2.6.1.tgz#ac27ada66167fa8849a6addd837f6b189ad2081c"
 
-nock@^11.0.0:
+nock@11.3.3:
   version "11.3.3"
   resolved "https://registry.yarnpkg.com/nock/-/nock-11.3.3.tgz#f4553d87ac8e501d7a995a50df7e24857f879f58"
+  integrity sha512-SrRux5onbWf2ItpmietnLYis+C2QYF08hAo9wv/3QLqaLJVHBSVBTL0EvlD8Hjrm7lTH4vExTzr9gQUsPqy5Cg==
   dependencies:
     chai "^4.1.2"
     debug "^4.1.0"
