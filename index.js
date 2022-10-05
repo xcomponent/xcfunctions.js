@@ -57,7 +57,7 @@ function getTask(componentName, stateMachineName, callback) {
                 body += data;
             });
             response.on('end', () => {
-                if (body === 'null') {
+                if (!body) {
                     callback(nullBodyError, null);
                     return;
                 }
